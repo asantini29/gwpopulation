@@ -1,10 +1,12 @@
 import unittest
 
+import numpy as np
 from bilby.hyper.model import Model
 
 from gwpopulation import vt
-from gwpopulation.cupy_utils import xp
 from gwpopulation.models.redshift import PowerLawRedshift, total_four_volume
+
+xp = np
 
 
 def dummy_function(dataset, alpha):

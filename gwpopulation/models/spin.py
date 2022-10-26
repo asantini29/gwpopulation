@@ -2,7 +2,8 @@
 Implemented spin models
 """
 
-from ..cupy_utils import xp
+import numpy as xp
+
 from ..utils import beta_dist, truncnorm, unnormalized_2d_gaussian
 
 

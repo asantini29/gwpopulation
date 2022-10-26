@@ -3,7 +3,8 @@ Implemented mass models
 """
 import inspect
 
-from ..cupy_utils import trapz, xp
+import numpy as xp
+
 from ..utils import powerlaw, truncnorm
 
 
@@ -555,7 +556,7 @@ class BaseSmoothedMassDistribution(object):
         p_m = self.__class__.primary_model(self.m1s, **kwargs)
         p_m *= self.smoothing(self.m1s, mmin=mmin, mmax=self.mmax, delta_m=delta_m)
 
-        norm = trapz(p_m, self.m1s)
+        norm = xp.trapz(p_m, self.m1s)
         return norm
 
     def p_q(self, dataset, beta, mmin, delta_m):
@@ -582,7 +583,7 @@ class BaseSmoothedMassDistribution(object):
         p_q *= self.smoothing(
             self.m1s_grid * self.qs_grid, mmin=mmin, mmax=self.m1s_grid, delta_m=delta_m
         )
-        norms = trapz(p_q, self.qs, axis=0)
+        norms = xp.trapz(p_q, self.qs, axis=0)
 
         all_norms = (
             norms[self.n_below] * (1 - self.step) + norms[self.n_above] * self.step

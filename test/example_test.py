@@ -3,16 +3,20 @@ import glob
 import bilby
 import numpy as np
 import pandas as pd
+import pytest
 
 import gwpopulation
 
 
-def test_likelihood_evaluation():
+@pytest.mark.parametrize("backend", ["numpy", "jax.numpy"])
+def test_likelihood_evaluation(backend):
+    gwpopulation.set_backend(backend)
     np.random.seed(10)
 
     model = bilby.hyper.model.Model(
         [
-            gwpopulation.models.mass.SinglePeakSmoothedMassDistribution(),
+            # gwpopulation.models.mass.SinglePeakSmoothedMassDistribution(),
+            gwpopulation.models.mass.power_law_primary_mass_ratio,
             gwpopulation.models.spin.independent_spin_magnitude_beta,
             gwpopulation.models.spin.independent_spin_orientation_gaussian_isotropic,
             gwpopulation.models.redshift.PowerLawRedshift(),
@@ -20,7 +24,8 @@ def test_likelihood_evaluation():
     )
     vt_model = bilby.hyper.model.Model(
         [
-            gwpopulation.models.mass.SinglePeakSmoothedMassDistribution(),
+            # gwpopulation.models.mass.SinglePeakSmoothedMassDistribution(),
+            gwpopulation.models.mass.power_law_primary_mass_ratio,
             gwpopulation.models.spin.independent_spin_magnitude_beta,
             gwpopulation.models.spin.independent_spin_orientation_gaussian_isotropic,
             gwpopulation.models.redshift.PowerLawRedshift(),
@@ -55,6 +60,10 @@ def test_likelihood_evaluation():
 
     likelihood.parameters.update(priors.sample())
     assert abs(likelihood.log_likelihood_ratio() - 0.1319280773148961) < 0.01
+
+    # for _ in range(1000):
+    #     likelihood.parameters.update(priors.sample())
+    #     likelihood.log_likelihood_ratio()
 
 
 def test_prior_files_load():

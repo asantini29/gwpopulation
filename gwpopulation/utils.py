@@ -4,7 +4,10 @@ Helper functions for probability distributions.
 
 import os
 
-from .cupy_utils import betaln, erf, i0e, xp
+import numpy as np
+from scipy.special import betaln, erf, i0e
+
+xp = np
 
 
 def beta_dist(xx, alpha, beta, scale=1):
@@ -198,3 +201,13 @@ def get_version_information():
     from gwpopulation import __version__
 
     return __version__
+
+
+def to_numpy(array):
+    """Cast any array to numpy"""
+    if __backend__ == "numpy":
+        return array
+    elif __backend__ == "cupy":
+        return xp.asnumpy(array)
+    elif __backend__ == "jax.numpy":
+        return np.asarray(array)

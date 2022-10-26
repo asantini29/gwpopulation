@@ -41,6 +41,7 @@ jobs:
       run: |
         conda install flake8 pytest-cov
         conda install --file requirements.txt
+        conda install -c conda-forge jax jaxlib
         conda install pre-commit codespell
         conda install jupyter
         conda install pip setuptools

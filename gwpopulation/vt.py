@@ -5,7 +5,7 @@ Sensitive volume estimation.
 import numpy as np
 from bilby.hyper.model import Model
 
-from .cupy_utils import trapz, xp
+xp = np
 from .models.redshift import _Redshift, total_four_volume
 
 
@@ -47,7 +47,9 @@ class GridVT(_BaseVT):
         self.model.parameters.update(parameters)
         vt_fac = self.model.prob(self.data) * self.vts
         for ii in range(self.ndim):
-            vt_fac = trapz(vt_fac, self.values[self.axes[self.ndim - ii - 1]], axis=-1)
+            vt_fac = xp.trapz(
+                vt_fac, self.values[self.axes[self.ndim - ii - 1]], axis=-1
+            )
         return vt_fac
 
 

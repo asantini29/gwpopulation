@@ -9,7 +9,9 @@ from bilby.core.likelihood import Likelihood
 from bilby.core.utils import logger
 from bilby.hyper.model import Model
 
-from .cupy_utils import CUPY_LOADED, to_numpy, xp
+from .utils import to_numpy
+
+xp = np
 
 
 class HyperparameterLikelihood(Likelihood):
@@ -66,7 +68,7 @@ class HyperparameterLikelihood(Likelihood):
             If the uncertainty is larger than this value a log likelihood of
             -inf will be returned. Default = inf
         """
-        if cupy and not CUPY_LOADED:
+        if cupy and xp == np:
             logger.warning("Cannot import cupy, falling back to numpy.")
 
         self.samples_per_posterior = max_samples

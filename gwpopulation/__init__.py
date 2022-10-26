@@ -14,7 +14,7 @@ This includes:
 
 The code is hosted at `<www.github.com/ColmTalbot/gwpopulation>`_.
 """
-from . import conversions, cupy_utils, hyperpe, models, utils, vt
+from . import conversions, hyperpe, models, utils, vt
 from .hyperpe import RateLikelihood
 
 try:
@@ -24,14 +24,14 @@ except ModuleNotFoundError:  # development mode
 
 
 __all_with_xp = [
+    hyperpe,
     models.mass,
     models.redshift,
     models.spin,
-    cupy_utils,
-    hyperpe,
     utils,
     vt,
 ]
+__backend__ = ""
 
 
 def disable_cupy():
@@ -41,7 +41,7 @@ def disable_cupy():
         f"Function enable_cupy is deprecated, use set_backed('cupy') instead",
         DeprecationWarning,
     )
-    set_backend(module="numpy")
+    set_backend(backend="numpy")
 
 
 def enable_cupy():
@@ -51,22 +51,40 @@ def enable_cupy():
         f"Function enable_cupy is deprecated, use set_backed('cupy') instead",
         DeprecationWarning,
     )
-    set_backend(module="cupy")
+    set_backend(backend="cupy")
 
 
-def set_backend(module="numpy"):
+def set_backend(backend="numpy", verbose=True):
+    global __backend__
+    global xp
+    if backend == __backend__:
+        return
     supported = ["numpy", "cupy", "jax.numpy"]
-    if module not in supported:
+    scipy_module = {"numpy": "scipy", "cupy": "cupyx.scipy", "jax.numpy": "jax.scipy"}
+    if backend not in supported:
         raise ValueError(
-            f"Backed {module} not supported, should be in ', '.join(supported)"
+            f"Backed {backend} not supported, should be in {', '.join(supported)}"
         )
     import importlib
 
     try:
-        xp = importlib.import_module(module)
+        xp = importlib.import_module(backend)
+        scipy = importlib.import_module(scipy_module[backend])
     except ImportError:
-        print(f"Cannot import {module}, falling back to numpy")
-        set_backend(module="numpy")
+        if verbose:
+            print(f"Cannot import {backend}, falling back to numpy")
+        set_backend(backend="numpy", verbose=False)
         return
     for module in __all_with_xp:
+        if verbose:
+            print(f"Setting backend to {backend}")
+        __backend__ = backend
+        module.__backend__ = backend
         module.xp = xp
+        module.betaln = scipy.special.betaln
+        module.erf = scipy.special.erf
+        module.gammaln = scipy.special.gammaln
+        module.i0e = scipy.special.i0e
+
+
+set_backend("cupy", verbose=False)
