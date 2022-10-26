@@ -4,9 +4,9 @@ Implemented redshift models
 
 import numpy as np
 
-xp = np
-
 from ..utils import to_numpy
+
+xp = np
 
 
 class _Redshift(object):
@@ -22,7 +22,9 @@ class _Redshift(object):
         self.z_max = z_max
         self.zs_ = np.linspace(1e-3, z_max, 1000)
         self.zs = xp.asarray(self.zs_)
-        self.dvc_dz_ = Planck15.differential_comoving_volume(self.zs_).value * 4 * np.pi
+        self.dvc_dz_ = (
+            Planck15.differential_comoving_volume(self.zs_).value * 4 * np.pi / 1e9
+        )
         self.dvc_dz = xp.asarray(self.dvc_dz_)
         self.cached_dvc_dz = None
 
@@ -48,7 +50,7 @@ class _Redshift(object):
 
         Returns
         -------
-        (float, array-like): Total spacetime volume
+        (float, array-like): Total spacetime volume with units Gpc^3
         """
         psi_of_z = self.psi_of_z(redshift=self.zs, **parameters)
         norm = xp.trapz(psi_of_z * self.dvc_dz / (1 + self.zs), self.zs)
