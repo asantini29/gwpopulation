@@ -1,5 +1,3 @@
-import unittest
-
 import numpy as np
 import pytest
 from bilby.core.prior import PriorDict, Uniform
@@ -60,8 +58,7 @@ def test_spin_orientation_normalised(backend):
 @pytest.mark.parametrize("backend", TEST_BACKENDS)
 def test_iid_matches_independent_tilts(backend):
     gwpopulation.set_backend(backend)
-    xp = gwpopulation.xp
-    to_numpy = gwpopulation.utils.to_numpy
+    xp = gwpopulation.utils.xp
     iid_params = dict(xi_spin=0.5, sigma_spin=0.5)
     ind_params = dict(xi_spin=0.5, sigma_1=0.5, sigma_2=0.5)
     _, dataset = tilt_test_data(xp)
@@ -76,33 +73,10 @@ def test_iid_matches_independent_tilts(backend):
     )
 
 
-class TestSpinMagnitude(unittest.TestCase):
-    def setUp(self):
-        gwpopulation.set_backend("numpy")
-        xp = gwpopulation.xp
-
-        self.a_array = xp.linspace(0, 1, 1000)
-        self.test_data = dict(
-            a_1=xp.einsum("i,j->ij", self.a_array, xp.ones_like(self.a_array)),
-            a_2=xp.einsum("i,j->ji", self.a_array, xp.ones_like(self.a_array)),
-        )
-        self.prior = PriorDict(
-            dict(amax=Uniform(0.3, 1), alpha_chi=Uniform(1, 4), beta_chi=Uniform(1, 4))
-        )
-        self.n_test = 100
-
-    def tearDown(self):
-        del self.test_data
-        del self.prior
-        del self.a_array
-        del self.n_test
-
-
 @pytest.mark.parametrize("backend", TEST_BACKENDS)
 def test_spin_magnitude_normalised(backend):
     gwpopulation.set_backend(backend)
-    xp = gwpopulation.xp
-    to_numpy = gwpopulation.utils.to_numpy
+    xp = gwpopulation.utils.xp
     prior = magnitude_prior()
     a_array, dataset = magnitude_test_data(xp)
     norms = list()
@@ -116,8 +90,7 @@ def test_spin_magnitude_normalised(backend):
 @pytest.mark.parametrize("backend", TEST_BACKENDS)
 def test_returns_zero_alpha_beta_less_zero(backend):
     gwpopulation.set_backend(backend)
-    xp = gwpopulation.xp
-    to_numpy = gwpopulation.utils.to_numpy
+    xp = gwpopulation.utils.xp
     prior = magnitude_prior()
     a_array, dataset = magnitude_test_data(xp)
     parameters = prior.sample()
@@ -129,8 +102,7 @@ def test_returns_zero_alpha_beta_less_zero(backend):
 @pytest.mark.parametrize("backend", TEST_BACKENDS)
 def test_iid_matches_independent_magnitudes(backend):
     gwpopulation.set_backend(backend)
-    xp = gwpopulation.xp
-    to_numpy = gwpopulation.utils.to_numpy
+    xp = gwpopulation.utils.xp
     prior = magnitude_prior()
     a_array, dataset = magnitude_test_data(xp)
     iid_params = prior.sample()
@@ -151,8 +123,7 @@ def test_iid_matches_independent_magnitudes(backend):
 @pytest.mark.parametrize("backend", TEST_BACKENDS)
 def test_iid_matches_independent(backend):
     gwpopulation.set_backend(backend)
-    xp = gwpopulation.xp
-    to_numpy = gwpopulation.utils.to_numpy
+    xp = gwpopulation.utils.xp
     test_data = dict()
     costilts, new_data = tilt_test_data(xp)
     test_data.update(new_data)
@@ -178,8 +149,7 @@ def test_iid_matches_independent(backend):
 @pytest.mark.parametrize("backend", TEST_BACKENDS)
 def test_gaussian_chi_eff(backend):
     gwpopulation.set_backend(backend)
-    xp = gwpopulation.xp
-    to_numpy = gwpopulation.utils.to_numpy
+    xp = gwpopulation.utils.xp
     assert (
         float(
             xp.max(
@@ -198,8 +168,7 @@ def test_gaussian_chi_eff(backend):
 @pytest.mark.parametrize("backend", TEST_BACKENDS)
 def test_gaussian_chi_p(backend):
     gwpopulation.set_backend(backend)
-    xp = gwpopulation.xp
-    to_numpy = gwpopulation.utils.to_numpy
+    xp = gwpopulation.utils.xp
     assert (
         float(
             xp.max(
@@ -216,8 +185,7 @@ def test_gaussian_chi_p(backend):
 @pytest.mark.parametrize("backend", TEST_BACKENDS)
 def test_2d_gaussian_normalized(backend):
     gwpopulation.set_backend(backend)
-    xp = gwpopulation.xp
-    to_numpy = gwpopulation.utils.to_numpy
+    xp = gwpopulation.utils.xp
     model = spin.GaussianChiEffChiP()
     chi_eff, chi_p = xp.meshgrid(xp.linspace(-1, 1, 501), xp.linspace(0, 1, 300))
     parameters = dict(
@@ -244,8 +212,7 @@ def test_2d_gaussian_normalized(backend):
 @pytest.mark.parametrize("backend", TEST_BACKENDS)
 def test_2d_gaussian_no_covariance_matches_independent(backend):
     gwpopulation.set_backend(backend)
-    xp = gwpopulation.xp
-    to_numpy = gwpopulation.utils.to_numpy
+    xp = gwpopulation.utils.xp
     model = spin.GaussianChiEffChiP()
     chi_eff, chi_p = xp.meshgrid(xp.linspace(-1, 1, 501), xp.linspace(0, 1, 300))
     data = dict(chi_eff=chi_eff, chi_p=chi_p)

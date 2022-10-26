@@ -136,6 +136,4 @@ class ResamplingVT(_BaseVT):
         if self.redshift_model is None:
             return self._surveyed_hypervolume
         else:
-            return (
-                self.redshift_model.normalisation(parameters) / 1e9 * self.analysis_time
-            )
+            return self.redshift_model.normalisation(parameters) * self.analysis_time

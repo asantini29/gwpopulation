@@ -1,5 +1,3 @@
-import unittest
-
 import numpy as np
 import pytest
 from scipy.stats import vonmises
@@ -10,15 +8,6 @@ from gwpopulation import utils
 from . import TEST_BACKENDS
 
 N_TEST = 100
-
-
-class TestBetaDist(unittest.TestCase):
-    def setUp(self):
-        self.n_test = 100
-        self.alphas = np.random.uniform(0, 10, self.n_test)
-        self.betas = np.random.uniform(0, 10, self.n_test)
-        self.scales = np.random.uniform(0, 10, self.n_test)
-        pass
 
 
 def test_beta_dist_zero_below_zero():
@@ -45,14 +34,6 @@ def test_beta_dist_alpha_below_zero_raises_value_error():
 def test_beta_dist_beta_below_zero_raises_value_error():
     with pytest.raises(ValueError):
         utils.beta_dist(xx=0.5, alpha=1, beta=-1, scale=1)
-
-
-class TestPowerLaw(unittest.TestCase):
-    def setUp(self):
-        self.n_test = 100
-        self.alphas = np.random.uniform(-10, 10, self.n_test)
-        self.lows = np.random.uniform(5, 15, self.n_test)
-        self.highs = np.random.uniform(20, 30, self.n_test)
 
 
 def test_powerlaw_zero_below_low():

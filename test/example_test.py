@@ -15,7 +15,6 @@ def test_likelihood_evaluation(backend):
 
     model = bilby.hyper.model.Model(
         [
-            # gwpopulation.models.mass.SinglePeakSmoothedMassDistribution(),
             gwpopulation.models.mass.power_law_primary_mass_ratio,
             gwpopulation.models.spin.independent_spin_magnitude_beta,
             gwpopulation.models.spin.independent_spin_orientation_gaussian_isotropic,
@@ -24,7 +23,6 @@ def test_likelihood_evaluation(backend):
     )
     vt_model = bilby.hyper.model.Model(
         [
-            # gwpopulation.models.mass.SinglePeakSmoothedMassDistribution(),
             gwpopulation.models.mass.power_law_primary_mass_ratio,
             gwpopulation.models.spin.independent_spin_magnitude_beta,
             gwpopulation.models.spin.independent_spin_orientation_gaussian_isotropic,
@@ -61,11 +59,7 @@ def test_likelihood_evaluation(backend):
     likelihood.parameters.update(priors.sample())
     assert abs(likelihood.log_likelihood_ratio() - 0.1319280773148961) < 0.01
 
-    # for _ in range(1000):
-    #     likelihood.parameters.update(priors.sample())
-    #     likelihood.log_likelihood_ratio()
-
 
 def test_prior_files_load():
     for fname in glob.glob("priors/*.prior"):
-        priors = bilby.core.prior.PriorDict(fname)
+        _ = bilby.core.prior.PriorDict(fname)

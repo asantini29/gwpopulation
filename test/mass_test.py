@@ -97,7 +97,7 @@ def get_primary_secondary_data(xp):
 @pytest.mark.parametrize("backend", TEST_BACKENDS)
 def test_power_law_primary_mass_ratio_zero_below_mmin(backend):
     gwpopulation.set_backend(backend)
-    xp = gwpopulation.xp
+    xp = gwpopulation.utils.xp
     to_numpy = gwpopulation.utils.to_numpy
     m1s, qs, dataset = get_primary_mass_ratio_data(xp)
     prior = power_prior()
@@ -112,7 +112,7 @@ def test_power_law_primary_mass_ratio_zero_below_mmin(backend):
 @pytest.mark.parametrize("backend", TEST_BACKENDS)
 def test_power_law_primary_mass_ratio_zero_above_mmax(backend):
     gwpopulation.set_backend(backend)
-    xp = gwpopulation.xp
+    xp = gwpopulation.utils.xp
     to_numpy = gwpopulation.utils.to_numpy
     _, _, dataset = get_primary_mass_ratio_data(xp)
     prior = power_prior()
@@ -127,7 +127,7 @@ def test_power_law_primary_mass_ratio_zero_above_mmax(backend):
 @pytest.mark.parametrize("backend", TEST_BACKENDS)
 def test_two_component_primary_mass_ratio_zero_below_mmin(backend):
     gwpopulation.set_backend(backend)
-    xp = gwpopulation.xp
+    xp = gwpopulation.utils.xp
     to_numpy = gwpopulation.utils.to_numpy
     m1s, qs, dataset = get_primary_mass_ratio_data(xp)
     prior = power_prior()
@@ -143,7 +143,7 @@ def test_two_component_primary_mass_ratio_zero_below_mmin(backend):
 @pytest.mark.parametrize("backend", TEST_BACKENDS)
 def test_power_law_primary_secondary_zero_below_mmin(backend):
     gwpopulation.set_backend(backend)
-    xp = gwpopulation.xp
+    xp = gwpopulation.utils.xp
     to_numpy = gwpopulation.utils.to_numpy
     _, _, dataset = get_primary_secondary_data(xp)
     prior = power_prior()
@@ -158,7 +158,7 @@ def test_power_law_primary_secondary_zero_below_mmin(backend):
 @pytest.mark.parametrize("backend", TEST_BACKENDS)
 def test_power_law_primary_secondary_zero_above_mmax(backend):
     gwpopulation.set_backend(backend)
-    xp = gwpopulation.xp
+    xp = gwpopulation.utils.xp
     to_numpy = gwpopulation.utils.to_numpy
     _, _, dataset = get_primary_secondary_data(xp)
     prior = power_prior()
@@ -174,7 +174,7 @@ def test_power_law_primary_secondary_zero_above_mmax(backend):
 @pytest.mark.parametrize("backend", TEST_BACKENDS)
 def test_two_component_primary_secondary_zero_below_mmin(backend):
     gwpopulation.set_backend(backend)
-    xp = gwpopulation.xp
+    xp = gwpopulation.utils.xp
     to_numpy = gwpopulation.utils.to_numpy
     _, _, dataset = get_primary_secondary_data(xp)
     prior = power_prior()
