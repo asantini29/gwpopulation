@@ -43,8 +43,7 @@ def magnitude_test_data(xp):
 @pytest.mark.parametrize("backend", TEST_BACKENDS)
 def test_spin_orientation_normalised(backend):
     gwpopulation.set_backend(backend)
-    xp = gwpopulation.xp
-    to_numpy = gwpopulation.utils.to_numpy
+    xp = gwpopulation.utils.xp
     norms = list()
     prior = tilt_prior()
     costilts, dataset = tilt_test_data(xp)

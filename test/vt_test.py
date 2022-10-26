@@ -1,5 +1,3 @@
-import unittest
-
 import numpy as np
 import pytest
 from bilby.hyper.model import Model
@@ -41,7 +39,7 @@ def test_base_cannot_be_called():
 
 
 @pytest.mark.parametrize("backend", TEST_BACKENDS)
-def test_vt_correct(backend):
+def test_grid_vt_correct(backend):
     gwpopulation.set_backend(backend)
     xp = gwpopulation.utils.xp
     model = lambda dataset: xp.ones_like(dataset["a"])
@@ -63,7 +61,7 @@ def get_vt(xp):
 
 
 @pytest.mark.parametrize("backend", TEST_BACKENDS)
-def test_vt_correct(backend):
+def test_resampling_vt_correct(backend):
     gwpopulation.set_backend(backend)
     xp = gwpopulation.utils.xp
     assert abs(float(get_vt(xp)(dict())) - 0.38289325179141254) < 1e-6

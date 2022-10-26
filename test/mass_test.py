@@ -1,6 +1,3 @@
-import unittest
-from copy import deepcopy
-
 import numpy as np
 import pytest
 from bilby.core.prior import PriorDict, Uniform
@@ -53,29 +50,40 @@ def double_gauss_prior():
     return double_gauss_prior
 
 
-class TestDoublePowerLaw(unittest.TestCase):
-    def setUp(self):
-        gwpopulation.set_backend("numpy")
-        self.m1s, self.qs, self.dataset = get_primary_mass_ratio_data(np)
-        self.power_prior = double_power_prior()
-        self.n_test = N_TEST
+def smooth_prior():
+    smooth_prior = PriorDict()
+    smooth_prior["delta_m"] = Uniform(minimum=0, maximum=10)
+    return smooth_prior
 
-    def test_double_power_law_zero_below_mmin(self):
-        for ii in range(self.n_test):
-            parameters = self.power_prior.sample()
-            del parameters["beta"]
-            p_m = mass.double_power_law_primary_mass(self.m1s, **parameters)
-            self.assertEqual(np.max(p_m[self.m1s <= parameters["mmin"]]), 0.0)
 
-    def test_power_law_primary_mass_ratio_zero_above_mmax(self):
-        for ii in range(self.n_test):
-            parameters = self.power_prior.sample()
-            p_m = mass.double_power_law_primary_power_law_mass_ratio(
-                self.dataset, **parameters
-            )
-            self.assertEqual(
-                np.max(p_m[self.dataset["mass_1"] > parameters["mmax"]]), 0.0
-            )
+@pytest.mark.parametrize("backend", TEST_BACKENDS)
+def test_double_power_law_zero_below_mmin(backend):
+    gwpopulation.set_backend(backend)
+    xp = gwpopulation.utils.xp
+    to_numpy = gwpopulation.utils.to_numpy
+    m1s, _, _ = get_primary_mass_ratio_data(xp)
+    prior = double_power_prior()
+    for ii in range(N_TEST):
+        parameters = prior.sample()
+        del parameters["beta"]
+        p_m = mass.double_power_law_primary_mass(m1s, **parameters)
+        p_m = to_numpy(p_m)
+        assert np.max(p_m[m1s < parameters["mmin"]]) == 0.0
+
+
+@pytest.mark.parametrize("backend", TEST_BACKENDS)
+def test_power_law_primary_mass_ratio_zero_above_mmax(backend):
+    gwpopulation.set_backend(backend)
+    xp = gwpopulation.utils.xp
+    to_numpy = gwpopulation.utils.to_numpy
+    m1s, qs, dataset = get_primary_mass_ratio_data(xp)
+    prior = double_power_prior()
+    m1s = dataset["mass_1"]
+    for ii in range(N_TEST):
+        parameters = prior.sample()
+        p_m = mass.double_power_law_primary_power_law_mass_ratio(dataset, **parameters)
+        p_m = to_numpy(p_m)
+        assert np.max(p_m[m1s > parameters["mmax"]]) == 0.0
 
 
 def get_primary_mass_ratio_data(xp):
@@ -92,6 +100,14 @@ def get_primary_secondary_data(xp):
     m1s_grid, m2s_grid = xp.meshgrid(ms, ms)
     dataset = dict(mass_1=m1s_grid, mass_2=m2s_grid)
     return ms, dm, dataset
+
+
+def get_smoothed_data(xp):
+    m1s = xp.linspace(2, 100, 1000)
+    qs = xp.linspace(0.01, 1, 500)
+    m1s_grid, qs_grid = xp.meshgrid(m1s, qs)
+    dataset = dict(mass_1=m1s_grid, mass_ratio=qs_grid)
+    return m1s, qs, dataset
 
 
 @pytest.mark.parametrize("backend", TEST_BACKENDS)
@@ -187,142 +203,137 @@ def test_two_component_primary_secondary_zero_below_mmin(backend):
         assert np.max(p_m[m2s <= parameters["mmin"]]) == 0.0
 
 
-class TestSmoothedMassDistribution(unittest.TestCase):
-    def setUp(self):
-        gwpopulation.set_backend("numpy")
-        self.trapz = np.trapz
-        self.m1s = np.linspace(2, 100, 1000)
-        self.qs = np.linspace(0.01, 1, 500)
-        m1s_grid, qs_grid = xp.meshgrid(self.m1s, self.qs)
-        self.dataset = dict(mass_1=m1s_grid, mass_ratio=qs_grid)
-        self.power_prior = power_prior()
-        self.gauss_prior = gauss_prior()
-        self.double_gauss_prior = double_gauss_prior()
-        self.broken_power_prior = double_power_prior()
-        self.broken_power_peak_prior = double_power_prior()
-        self.broken_power_peak_prior.update(gauss_prior())
-        self.smooth_prior = PriorDict()
-        self.smooth_prior["delta_m"] = Uniform(minimum=0, maximum=10)
-        self.n_test = N_TEST
+@pytest.mark.parametrize("backend", TEST_BACKENDS)
+def test_single_peak_delta_m_zero_matches_two_component_primary_mass_ratio(backend):
+    gwpopulation.set_backend(backend)
+    xp = gwpopulation.utils.xp
+    _, _, dataset = get_smoothed_data(xp)
+    max_diffs = list()
+    prior = power_prior()
+    prior.update(gauss_prior())
+    for ii in range(N_TEST):
+        parameters = prior.sample()
+        p_m1 = mass.two_component_primary_mass_ratio(dataset, **parameters)
+        parameters["delta_m"] = 0
+        p_m2 = mass.SinglePeakSmoothedMassDistribution()(dataset, **parameters)
+        max_diffs.append(_max_abs_difference(p_m1, p_m2))
+    assert max(max_diffs) < 1e-5
 
-    def test_single_peak_delta_m_zero_matches_two_component_primary_mass_ratio(self):
-        max_diffs = list()
-        for ii in range(self.n_test):
-            parameters = self.power_prior.sample()
-            parameters.update(self.gauss_prior.sample())
-            p_m1 = mass.two_component_primary_mass_ratio(self.dataset, **parameters)
-            parameters["delta_m"] = 0
-            p_m2 = mass.SinglePeakSmoothedMassDistribution()(self.dataset, **parameters)
-            max_diffs.append(_max_abs_difference(p_m1, p_m2))
-        self.assertAlmostEqual(max(max_diffs), 0.0)
 
-    def test_double_peak_delta_m_zero_matches_two_component_primary_mass_ratio(self):
-        max_diffs = list()
-        for ii in range(self.n_test):
-            parameters = self.power_prior.sample()
-            parameters.update(self.double_gauss_prior.sample())
-            del parameters["beta"]
-            p_m1 = mass.three_component_single(
-                mass=self.dataset["mass_1"], **parameters
-            )
-            parameters["delta_m"] = 0
-            p_m2 = mass.MultiPeakSmoothedMassDistribution().p_m1(
-                self.dataset, **parameters
-            )
-            max_diffs.append(_max_abs_difference(p_m1, p_m2))
-        self.assertAlmostEqual(max(max_diffs), 0.0)
+@pytest.mark.parametrize("backend", TEST_BACKENDS)
+def test_double_peak_delta_m_zero_matches_two_component_primary_mass_ratio(backend):
+    gwpopulation.set_backend(backend)
+    xp = gwpopulation.utils.xp
+    _, _, dataset = get_smoothed_data(xp)
+    max_diffs = list()
+    prior = power_prior()
+    prior.update(double_gauss_prior())
+    for ii in range(N_TEST):
+        parameters = prior.sample()
+        del parameters["beta"]
+        p_m1 = mass.three_component_single(mass=dataset["mass_1"], **parameters)
+        parameters["delta_m"] = 0
+        p_m2 = mass.MultiPeakSmoothedMassDistribution().p_m1(dataset, **parameters)
+        max_diffs.append(_max_abs_difference(p_m1, p_m2))
+    assert max(max_diffs) < 1e-5
 
-    def test_single_peak_normalised(self):
-        norms = list()
-        model = mass.SinglePeakSmoothedMassDistribution()
-        prior = deepcopy(self.power_prior)
-        prior.update(self.gauss_prior)
-        prior.update(self.smooth_prior)
-        for ii in range(self.n_test):
-            parameters = prior.sample()
-            p_m = model(self.dataset, **parameters)
-            norms.append(self.trapz(self.trapz(p_m, self.m1s), self.qs))
-        self.assertAlmostEqual(_max_abs_difference(norms, 1.0), 0.0, 2)
 
-    def test_double_peak_normalised(self):
-        norms = list()
-        model = mass.MultiPeakSmoothedMassDistribution()
-        prior = deepcopy(self.power_prior)
-        prior.update(self.double_gauss_prior)
-        prior.update(self.smooth_prior)
-        for ii in range(self.n_test):
-            parameters = prior.sample()
-            p_m = model(self.dataset, **parameters)
-            norms.append(self.trapz(self.trapz(p_m, self.m1s), self.qs))
-        self.assertAlmostEqual(_max_abs_difference(norms, 1.0), 0.0, 2)
+def _normalised(model, prior, xp):
+    m1s, qs, dataset = get_smoothed_data(xp)
+    norms = list()
+    for ii in range(N_TEST):
+        parameters = prior.sample()
+        p_m = model(dataset, **parameters)
+        norms.append(float(xp.trapz(xp.trapz(p_m, m1s), qs)))
+    assert _max_abs_difference(norms, 1.0) < 0.01
 
-    def test_broken_power_law_normalised(self):
-        norms = list()
-        model = mass.BrokenPowerLawSmoothedMassDistribution()
-        prior = deepcopy(self.broken_power_prior)
-        prior.update(self.smooth_prior)
-        for ii in range(self.n_test):
-            parameters = prior.sample()
-            p_m = model(self.dataset, **parameters)
-            norms.append(self.trapz(self.trapz(p_m, self.m1s), self.qs))
-            print(norms, parameters, p_m)
-        self.assertAlmostEqual(_max_abs_difference(norms, 1.0), 0.0, 2)
 
-    def test_broken_power_law_peak_normalised(self):
-        norms = list()
-        model = mass.BrokenPowerLawPeakSmoothedMassDistribution()
-        prior = deepcopy(self.broken_power_peak_prior)
-        prior.update(self.smooth_prior)
-        for ii in range(self.n_test):
-            parameters = prior.sample()
-            p_m = model(self.dataset, **parameters)
-            norms.append(self.trapz(self.trapz(p_m, self.m1s), self.qs))
-        self.assertAlmostEqual(_max_abs_difference(norms, 1.0), 0.0, 2)
+@pytest.mark.parametrize("backend", TEST_BACKENDS)
+def test_single_peak_normalised(backend):
+    gwpopulation.set_backend(backend)
+    xp = gwpopulation.utils.xp
+    model = mass.SinglePeakSmoothedMassDistribution()
+    prior = power_prior()
+    prior.update(gauss_prior())
+    prior.update(smooth_prior())
+    _normalised(model, prior, xp)
 
-    def test_set_minimum_and_maximum(self):
-        model = mass.SinglePeakSmoothedMassDistribution(mmin=5, mmax=150)
-        parameters = self.gauss_prior.sample()
-        parameters.update(self.power_prior.sample())
-        parameters.update(self.smooth_prior.sample())
-        parameters["mpp"] = 130
-        parameters["sigpp"] = 1
-        parameters["lam"] = 0.5
-        parameters["mmin"] = 5
-        self.assertEqual(
-            model(
-                dict(mass_1=8 * np.ones(5), mass_ratio=0.5 * np.ones(5)), **parameters
-            )[0],
-            0,
-        )
-        self.assertGreater(
-            model(
-                dict(mass_1=130 * np.ones(5), mass_ratio=0.9 * np.ones(5)), **parameters
-            )[0],
-            0,
-        )
 
-    def test_mmin_below_global_minimum_raises_error(self):
-        model = mass.SinglePeakSmoothedMassDistribution(mmin=5, mmax=150)
-        parameters = self.gauss_prior.sample()
-        parameters.update(self.power_prior.sample())
-        parameters.update(self.smooth_prior.sample())
-        parameters["mmin"] = 2
-        with self.assertRaises(ValueError):
-            model(self.dataset, **parameters)
+@pytest.mark.parametrize("backend", TEST_BACKENDS)
+def test_double_peak_normalised(backend):
+    gwpopulation.set_backend(backend)
+    xp = gwpopulation.utils.xp
+    model = mass.MultiPeakSmoothedMassDistribution()
+    prior = power_prior()
+    prior.update(double_gauss_prior())
+    prior.update(smooth_prior())
+    _normalised(model, prior, xp)
 
-    def test_mmax_above_global_maximum_raises_error(self):
-        model = mass.SinglePeakSmoothedMassDistribution(mmin=5, mmax=150)
-        parameters = self.gauss_prior.sample()
-        parameters.update(self.power_prior.sample())
-        parameters.update(self.smooth_prior.sample())
-        parameters["mmax"] = 200
-        with self.assertRaises(ValueError):
-            model(self.dataset, **parameters)
+
+@pytest.mark.parametrize("backend", TEST_BACKENDS)
+def test_broken_power_law_normalised(backend):
+    gwpopulation.set_backend(backend)
+    xp = gwpopulation.utils.xp
+    model = mass.BrokenPowerLawSmoothedMassDistribution()
+    prior = double_power_prior()
+    prior.update(smooth_prior())
+    _normalised(model, prior, xp)
+
+
+@pytest.mark.parametrize("backend", TEST_BACKENDS)
+def test_broken_power_law_peak_normalised(backend):
+    gwpopulation.set_backend(backend)
+    xp = gwpopulation.utils.xp
+    model = mass.BrokenPowerLawPeakSmoothedMassDistribution()
+    prior = double_power_prior()
+    prior.update(smooth_prior())
+    prior.update(gauss_prior())
+    _normalised(model, prior, xp)
+
+
+@pytest.mark.parametrize("backend", TEST_BACKENDS)
+def test_set_minimum_and_maximum(backend):
+    gwpopulation.set_backend(backend)
+    xp = gwpopulation.utils.xp
+    model = mass.SinglePeakSmoothedMassDistribution(mmin=5, mmax=150)
+    parameters = gauss_prior().sample()
+    parameters.update(power_prior().sample())
+    parameters.update(smooth_prior().sample())
+    parameters["mpp"] = 130
+    parameters["sigpp"] = 1
+    parameters["lam"] = 0.5
+    parameters["mmin"] = 5
+    assert (
+        model(dict(mass_1=8 * xp.ones(5), mass_ratio=0.5 * xp.ones(5)), **parameters)[0]
+        == 0
+    )
+    assert (
+        model(dict(mass_1=130 * xp.ones(5), mass_ratio=0.9 * xp.ones(5)), **parameters)[
+            0
+        ]
+        > 0
+    )
+
+
+def test_mmin_below_global_minimum_raises_error():
+    model = mass.SinglePeakSmoothedMassDistribution(mmin=5, mmax=150)
+    parameters = gauss_prior().sample()
+    parameters.update(power_prior().sample())
+    parameters.update(smooth_prior().sample())
+    parameters["mmin"] = 2
+    with pytest.raises(ValueError):
+        model(dict(mass_1=5, mass_ratio=0.9), **parameters)
+
+
+def test_mmax_above_global_maximum_raises_error():
+    model = mass.SinglePeakSmoothedMassDistribution(mmin=5, mmax=150)
+    parameters = gauss_prior().sample()
+    parameters.update(power_prior().sample())
+    parameters.update(smooth_prior().sample())
+    parameters["mmax"] = 200
+    with pytest.raises(ValueError):
+        model(dict(mass_1=5, mass_ratio=0.9), **parameters)
 
 
 def _max_abs_difference(array, comparison, xp=np):
     return float(xp.max(xp.abs(comparison - xp.asarray(array))))
-
-
-if __name__ == "__main__":
-    unittest.main()

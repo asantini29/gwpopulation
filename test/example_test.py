@@ -15,7 +15,7 @@ def test_likelihood_evaluation(backend):
 
     model = bilby.hyper.model.Model(
         [
-            gwpopulation.models.mass.power_law_primary_mass_ratio,
+            gwpopulation.models.mass.SinglePeakSmoothedMassDistribution(),
             gwpopulation.models.spin.independent_spin_magnitude_beta,
             gwpopulation.models.spin.independent_spin_orientation_gaussian_isotropic,
             gwpopulation.models.redshift.PowerLawRedshift(),
@@ -23,7 +23,7 @@ def test_likelihood_evaluation(backend):
     )
     vt_model = bilby.hyper.model.Model(
         [
-            gwpopulation.models.mass.power_law_primary_mass_ratio,
+            gwpopulation.models.mass.SinglePeakSmoothedMassDistribution(),
             gwpopulation.models.spin.independent_spin_magnitude_beta,
             gwpopulation.models.spin.independent_spin_orientation_gaussian_isotropic,
             gwpopulation.models.redshift.PowerLawRedshift(),

@@ -28,7 +28,10 @@ def test_set_backend_jax():
 
 def test_enable_cupy_deprecated():
     with pytest.deprecated_call():
-        gwpopulation.enable_cupy()
+        try:
+            gwpopulation.enable_cupy()
+        except ModuleNotFoundError:
+            pass
 
 
 def test_disable_cupy_deprecated():

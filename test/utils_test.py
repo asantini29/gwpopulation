@@ -115,3 +115,7 @@ def test_matches_scipy(backend):
         gwpop_vals = utils.von_mises(xx, mu, kappa)
         scipy_vals = vonmises(kappa=kappa, loc=mu).pdf(xx)
         assert max(abs(gwpop_vals - scipy_vals)) < 1e-3
+
+
+def test_get_version():
+    assert gwpopulation.__version__ == utils.get_version_information()
