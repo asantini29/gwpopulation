@@ -2,8 +2,6 @@
 Helper functions for probability distributions.
 """
 
-import os
-
 import numpy as np
 from scipy.special import betaln, erf, i0e
 

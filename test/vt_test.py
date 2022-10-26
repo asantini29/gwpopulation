@@ -3,6 +3,7 @@ import unittest
 import numpy as np
 from bilby.hyper.model import Model
 
+import gwpopulation
 from gwpopulation import vt
 from gwpopulation.models.redshift import PowerLawRedshift, total_four_volume
 
@@ -15,7 +16,7 @@ def dummy_function(dataset, alpha):
 
 class TestBase(unittest.TestCase):
     def setUp(self) -> None:
-        pass
+        gwpopulation.set_backend("numpy")
 
     def test_initialize_with_function(self):
         evaluator = vt._BaseVT(model=dummy_function, data=dict())
@@ -39,6 +40,7 @@ class TestBase(unittest.TestCase):
 
 class TestGridVT(unittest.TestCase):
     def setUp(self):
+        gwpopulation.set_backend("numpy")
         model = lambda dataset: xp.ones_like(dataset["a"])
         data = dict(a=xp.linspace(0, 1, 1000), vt=2)
         self.n_test = 100
@@ -50,6 +52,7 @@ class TestGridVT(unittest.TestCase):
 
 class TestResamplingVT(unittest.TestCase):
     def setUp(self) -> None:
+        gwpopulation.set_backend("numpy")
         model = (
             lambda dataset: xp.exp(-((dataset["a"] - 0.5) ** 2) / 2)
             / (2 * xp.pi) ** 0.5
