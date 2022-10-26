@@ -5,8 +5,9 @@ Sensitive volume estimation.
 import numpy as np
 from bilby.hyper.model import Model
 
-xp = np
 from .models.redshift import _Redshift, total_four_volume
+
+xp = np
 
 
 class _BaseVT(object):

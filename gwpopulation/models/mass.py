@@ -3,9 +3,12 @@ Implemented mass models
 """
 import inspect
 
-import numpy as xp
+import numpy as np
+import scipy.special as scs
 
-from ..utils import powerlaw, truncnorm
+from ..utils import powerlaw, to_numpy, truncnorm
+
+xp = np
 
 
 def double_power_law_primary_mass(mass, alpha_1, alpha_2, mmin, mmax, break_fraction):
@@ -33,16 +36,25 @@ def double_power_law_primary_mass(mass, alpha_1, alpha_2, mmin, mmax, break_frac
     mmax: float
         Maximum mass in the powerlaw distributed component (:math:`m_\max`).
     """
-
-    prob = xp.zeros_like(mass)
     m_break = mmin + break_fraction * (mmax - mmin)
     correction = powerlaw(m_break, alpha=-alpha_2, low=m_break, high=mmax) / powerlaw(
         m_break, alpha=-alpha_1, low=mmin, high=m_break
     )
-    low_part = powerlaw(mass[mass < m_break], alpha=-alpha_1, low=mmin, high=m_break)
-    prob[mass < m_break] = low_part * correction
-    high_part = powerlaw(mass[mass >= m_break], alpha=-alpha_2, low=m_break, high=mmax)
-    prob[mass >= m_break] = high_part
+    prob = xp.zeros_like(mass)
+    if __backend__ == "jax.numpy":
+        low_part = powerlaw(mass, alpha=-alpha_1, low=mmin, high=mmax)
+        prob += low_part * correction * (mass < m_break)
+        high_part = powerlaw(mass, alpha=-alpha_2, low=mmin, high=mmax)
+        prob += high_part * (mass >= m_break)
+    else:
+        low_part = powerlaw(
+            mass[mass < m_break], alpha=-alpha_1, low=mmin, high=m_break
+        )
+        prob[mass < m_break] = low_part * correction
+        high_part = powerlaw(
+            mass[mass >= m_break], alpha=-alpha_2, low=m_break, high=mmax
+        )
+        prob[mass >= m_break] = high_part
     return prob / (1 + correction)
 
 
@@ -516,8 +528,8 @@ class BaseSmoothedMassDistribution(object):
         self.mmax = mmax
         self.m1s = xp.linspace(mmin, mmax, normalization_shape[0])
         self.qs = xp.linspace(0.001, 1, normalization_shape[1])
-        self.dm = self.m1s[1] - self.m1s[0]
-        self.dq = self.qs[1] - self.qs[0]
+        self.dm = float(self.m1s[1] - self.m1s[0])
+        self.dq = float(self.qs[1] - self.qs[0])
         self.m1s_grid, self.qs_grid = xp.meshgrid(self.m1s, self.qs)
 
     def __call__(self, dataset, *args, **kwargs):
@@ -596,16 +608,19 @@ class BaseSmoothedMassDistribution(object):
         Cache the information necessary for linear interpolation of the mass
         ratio normalisation
         """
-        self.n_below = xp.zeros_like(masses, dtype=int) - 1
-        m_below = xp.zeros_like(masses)
-        for mm in self.m1s:
+        masses = to_numpy(masses)
+        self.n_below = np.zeros_like(masses, dtype=int) - 1
+        m_below = np.zeros_like(masses)
+        for mm in to_numpy(self.m1s):
             self.n_below += masses > mm
             m_below[masses > mm] = mm
         self.n_above = self.n_below + 1
         max_idx = len(self.m1s)
         self.n_below[self.n_below < 0] = 0
         self.n_above[self.n_above == max_idx] = max_idx - 1
-        self.step = xp.minimum((masses - m_below) / self.dm, 1)
+        self.n_below = xp.asarray(self.n_below)
+        self.n_above = xp.asarray(self.n_above)
+        self.step = xp.asarray(np.minimum((masses - m_below) / self.dm, 1))
 
     @staticmethod
     def smoothing(masses, mmin, mmax, delta_m):
@@ -624,16 +639,28 @@ class BaseSmoothedMassDistribution(object):
 
         See also, https://en.wikipedia.org/wiki/Window_function#Planck-taper_window
         """
-        window = xp.ones_like(masses)
-        if delta_m > 0.0:
-            smoothing_region = (masses >= mmin) & (masses < (mmin + delta_m))
+        window = xp.ones(masses.shape)
+        if delta_m == 0.0:
+            return window
+        smoothing_region = (masses >= mmin) & (masses < (mmin + delta_m))
+        if __backend__ == "jax.numpy":
+            shifted_mass = xp.maximum(
+                xp.minimum(masses - mmin, delta_m * (1 - 1e-6)), 0
+            )
+            exponent = xp.nan_to_num(
+                delta_m / shifted_mass + delta_m / (shifted_mass - delta_m)
+            )
+            window = scs.expit(-exponent)
+            window *= (masses >= mmin) * (masses <= mmax)
+        else:
+            window = xp.ones_like(masses)
             shifted_mass = masses[smoothing_region] - mmin
             if shifted_mass.size:
                 exponent = xp.nan_to_num(
                     delta_m / shifted_mass + delta_m / (shifted_mass - delta_m)
                 )
-                window[smoothing_region] = 1 / (xp.exp(exponent) + 1)
-        window[(masses < mmin) | (masses > mmax)] = 0
+                window[smoothing_region] = scs.expit(-exponent)
+            window[(masses < mmin) | (masses > mmax)] = 0
         return window
 
 

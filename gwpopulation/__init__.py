@@ -32,6 +32,8 @@ __all_with_xp = [
     vt,
 ]
 __backend__ = ""
+_backends = ["numpy", "cupy", "jax.numpy"]
+_scipy_module = {"numpy": "scipy", "cupy": "cupyx.scipy", "jax.numpy": "jax.scipy"}
 
 
 def disable_cupy():
@@ -54,37 +56,25 @@ def enable_cupy():
     set_backend(backend="cupy")
 
 
-def set_backend(backend="numpy", verbose=True):
+def set_backend(backend="numpy"):
     global __backend__
-    global xp
-    if backend == __backend__:
-        return
-    supported = ["numpy", "cupy", "jax.numpy"]
-    scipy_module = {"numpy": "scipy", "cupy": "cupyx.scipy", "jax.numpy": "jax.scipy"}
-    if backend not in supported:
+    if backend not in _backends:
         raise ValueError(
-            f"Backed {backend} not supported, should be in {', '.join(supported)}"
+            f"Backed {backend} not supported, should be in {', '.join(_backends)}"
         )
+    elif backend == __backend__:
+        return
+
     import importlib
 
-    try:
-        xp = importlib.import_module(backend)
-        scipy = importlib.import_module(scipy_module[backend])
-    except ImportError:
-        if verbose:
-            print(f"Cannot import {backend}, falling back to numpy")
-        set_backend(backend="numpy", verbose=False)
-        return
+    xp = importlib.import_module(backend)
+    scs = importlib.import_module(_scipy_module[backend]).special
     for module in __all_with_xp:
-        if verbose:
-            print(f"Setting backend to {backend}")
         __backend__ = backend
         module.__backend__ = backend
         module.xp = xp
-        module.betaln = scipy.special.betaln
-        module.erf = scipy.special.erf
-        module.gammaln = scipy.special.gammaln
-        module.i0e = scipy.special.i0e
+    utils.scs = scs
+    models.mass.scs = scs
 
 
-set_backend("cupy", verbose=False)
+set_backend("numpy")
