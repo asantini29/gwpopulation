@@ -211,3 +211,23 @@ def to_numpy(array):
         return xp.asnumpy(array)
     elif __backend__ == "jax.numpy":
         return np.asarray(array)
+
+
+def get_name(input):
+    """
+    Attempt to find the name of the the input. This either returns
+    :code:`input.__name__` or :code:`input.__class__.__name__`
+
+    Parameters
+    ==========
+    input: any
+        The input to find the name for.
+
+    Returns
+    =======
+    str: The name of the input.
+    """
+    if hasattr(input, "__name__"):
+        return input.__name__
+    else:
+        return input.__class__.__name__

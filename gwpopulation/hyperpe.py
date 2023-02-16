@@ -210,9 +210,11 @@ class HyperparameterLikelihood(Likelihood):
             sample[f"ln_bf_{ii}"] = float(ln_ls[ii])
             sample[f"var_{ii}"] = float(variances[ii])
         selection, variance = self._selection_function_with_uncertainty()
+        variance /= selection**2
+        selection_variance = variance * self.n_posteriors**2
         sample["selection"] = selection
         sample["selection_variance"] = variance
-        total_variance += variance
+        total_variance += selection_variance
         sample["variance"] = float(total_variance)
         if added_keys is not None:
             for key in added_keys:
@@ -355,7 +357,7 @@ class HyperparameterLikelihood(Likelihood):
     @property
     def meta_data(self):
         return dict(
-            model=[model.__name__ for model in self.hyper_prior.models],
+            model=[get_name(model) for model in self.hyper_prior.models],
             data={key: to_numpy(self.data[key]) for key in self.data},
             n_events=self.n_posteriors,
             sampling_prior=to_numpy(self.sampling_prior),
