@@ -71,7 +71,7 @@ def test_marginalized_vt_correct(backend):
 def test_resampling_vt_correct(backend):
     gwpopulation.set_backend(backend)
     xp = gwpopulation.utils.xp
-    assert abs(float(get_vt(xp)(dict())) - 0.38289325179141254) < 1e-6
+    assert abs(float(get_vt(xp)(dict())[0]) - 0.38289325179141254) < 1e-6
 
 
 @pytest.mark.parametrize("backend", TEST_BACKENDS)
@@ -79,6 +79,7 @@ def test_returns_inf_when_n_effective_too_small(backend):
     gwpopulation.set_backend(backend)
     xp = gwpopulation.utils.xp
     evaluator = get_vt(xp)
+    evaluator.marginalize_uncertainty = True
     evaluator.n_events = xp.inf
     assert evaluator(dict()) == xp.inf
 

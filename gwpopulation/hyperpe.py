@@ -9,7 +9,7 @@ from bilby.core.likelihood import Likelihood
 from bilby.core.utils import logger
 from bilby.hyper.model import Model
 
-from .utils import to_numpy
+from .utils import get_name, to_numpy
 
 xp = np
 
