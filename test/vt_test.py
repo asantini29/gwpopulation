@@ -61,7 +61,7 @@ def get_vt(xp):
 
 
 @pytest.mark.parametrize("backend", TEST_BACKENDS)
-def test_marginalized_vt_correct(self):
+def test_marginalized_vt_correct(backend):
     gwpopulation.set_backend(backend)
     xp = gwpopulation.utils.xp
     assert abs(float(get_vt(xp).vt_factor(dict())) - 0.38289403358409585) < 1e-6
