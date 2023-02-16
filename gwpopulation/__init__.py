@@ -25,6 +25,7 @@ except ModuleNotFoundError:  # development mode
 
 __all_with_xp = [
     hyperpe,
+    models.interped,
     models.mass,
     models.redshift,
     models.spin,
