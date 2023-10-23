@@ -3,12 +3,21 @@ Implemented mass models
 """
 import inspect
 
+<<<<<<< HEAD
 import numpy as np
 import scipy.special as scs
 
 from ..utils import powerlaw, to_numpy, truncnorm
 
 xp = np
+=======
+from inspect import getfullargspec
+
+import numpy as np
+
+from ..cupy_utils import trapz, xp
+from ..utils import powerlaw, truncnorm
+>>>>>>> spline-mass-models
 
 
 def double_power_law_primary_mass(mass, alpha_1, alpha_2, mmin, mmax, break_fraction):
@@ -506,8 +515,9 @@ class BaseSmoothedMassDistribution(object):
         The maximum mass considered for numerical normalization
     """
 
-    primary_model = None
+    _primary_model = None
 
+<<<<<<< HEAD
     @property
     def variable_names(self):
         vars = getattr(
@@ -524,6 +534,9 @@ class BaseSmoothedMassDistribution(object):
         return dict()
 
     def __init__(self, mmin=2, mmax=100, normalization_shape=(1000, 500)):
+=======
+    def __init__(self, mmin=2, mmax=100, primary_model=None):
+>>>>>>> spline-mass-models
         self.mmin = mmin
         self.mmax = mmax
         self.m1s = xp.linspace(mmin, mmax, normalization_shape[0])
@@ -531,8 +544,16 @@ class BaseSmoothedMassDistribution(object):
         self.dm = float(self.m1s[1] - self.m1s[0])
         self.dq = float(self.qs[1] - self.qs[0])
         self.m1s_grid, self.qs_grid = xp.meshgrid(self.m1s, self.qs)
+        if self.__class__._primary_model is None:
+            self._primary_model = primary_model
+        elif primary_model is not None:
+            raise ValueError(
+                f"Attempting to overwrite primary model for {self.__class__.__name__}"
+            )
+        else:
+            self._primary_model = self.__class__._primary_model
 
-    def __call__(self, dataset, *args, **kwargs):
+    def __call__(self, dataset, **kwargs):
         beta = kwargs.pop("beta")
         mmin = kwargs.get("mmin", self.mmin)
         mmax = kwargs.get("mmax", self.mmax)
@@ -550,14 +571,24 @@ class BaseSmoothedMassDistribution(object):
         prob = p_m1 * p_q
         return prob
 
+    @property
+    def variable_names(self):
+        return set(getfullargspec(self.primary_model).args[1:] + ["beta"])
+
+    @property
+    def primary_model(self):
+        return self._primary_model
+
     def p_m1(self, dataset, **kwargs):
         mmin = kwargs.get("mmin", self.mmin)
         delta_m = kwargs.pop("delta_m", 0)
-        p_m = self.__class__.primary_model(dataset["mass_1"], **kwargs)
+        p_m = self.primary_model(mass=dataset["mass_1"], **kwargs)
         p_m *= self.smoothing(
             dataset["mass_1"], mmin=mmin, mmax=self.mmax, delta_m=delta_m
         )
         norm = self.norm_p_m1(delta_m=delta_m, **kwargs)
+        print(norm)
+        print(p_m)
         return p_m / norm
 
     def norm_p_m1(self, delta_m, **kwargs):
@@ -565,7 +596,7 @@ class BaseSmoothedMassDistribution(object):
         mmin = kwargs.get("mmin", self.mmin)
         if delta_m == 0:
             return 1
-        p_m = self.__class__.primary_model(self.m1s, **kwargs)
+        p_m = self.primary_model(mass=self.m1s, **kwargs)
         p_m *= self.smoothing(self.m1s, mmin=mmin, mmax=self.mmax, delta_m=delta_m)
 
         norm = xp.trapz(p_m, self.m1s)
@@ -668,6 +699,7 @@ class SinglePeakSmoothedMassDistribution(BaseSmoothedMassDistribution):
     """
     Powerlaw + peak model for two-dimensional mass distribution with low
     mass smoothing.
+<<<<<<< HEAD
 
     https://arxiv.org/abs/1801.02699 Eq. (11) (T&T18)
 
@@ -697,18 +729,58 @@ class SinglePeakSmoothedMassDistribution(BaseSmoothedMassDistribution):
     The Gaussian component is bounded between [`mmin`, `self.mmax`].
     This means that the `mmax` parameter is _not_ the global maximum.
     """
+=======
+>>>>>>> spline-mass-models
 
-    primary_model = two_component_single
+    https://arxiv.org/abs/1801.02699 Eq. (11) (T&T18)
 
+<<<<<<< HEAD
     @property
     def kwargs(self):
         return dict(gaussian_mass_maximum=self.mmax)
+=======
+    Parameters
+    ----------
+    dataset: dict
+        Dictionary of numpy arrays for 'mass_1' and 'mass_ratio'.
+    alpha: float
+        Powerlaw exponent for more massive black hole.
+    beta: float
+        Power law exponent of the mass ratio distribution.
+    mmin: float
+        Minimum black hole mass.
+    mmax: float
+        Maximum mass in the powerlaw distributed component.
+    lam: float
+        Fraction of black holes in the Gaussian component.
+    mpp: float
+        Mean of the Gaussian component.
+    sigpp: float
+        Standard deviation of the Gaussian component.
+    delta_m: float
+        Rise length of the low end of the mass distribution.
+
+    Notes
+    -----
+    The Gaussian component is bounded between [`mmin`, `self.mmax`].
+    This means that the `mmax` parameter is _not_ the global maximum.
+    """
+
+    _primary_model = two_component_single
+
+    def __call__(self, dataset, **kwargs):
+        kwargs["gaussian_mass_maximum"] = kwargs.get("gaussian_mass_maximum", self.mmax)
+        return super(SinglePeakSmoothedMassDistribution, self).__call__(
+            dataset=dataset, **kwargs
+        )
+>>>>>>> spline-mass-models
 
 
 class MultiPeakSmoothedMassDistribution(BaseSmoothedMassDistribution):
     """
     Powerlaw + two peak model for two-dimensional mass distribution with
     low mass smoothing.
+<<<<<<< HEAD
 
     Parameters
     ----------
@@ -742,18 +814,56 @@ class MultiPeakSmoothedMassDistribution(BaseSmoothedMassDistribution):
     The Gaussian components are bounded between [`mmin`, `self.mmax`].
     This means that the `mmax` parameter is _not_ the global maximum.
     """
+=======
+>>>>>>> spline-mass-models
 
-    primary_model = three_component_single
+    Parameters
+    ----------
+    dataset: dict
+        Dictionary of numpy arrays for 'mass_1' and 'mass_ratio'.
+    alpha: float
+        Powerlaw exponent for more massive black hole.
+    beta: float
+        Power law exponent of the mass ratio distribution.
+    mmin: float
+        Minimum black hole mass.
+    mmax: float
+        Maximum mass in the powerlaw distributed component.
+    lam: float
+        Fraction of black holes in the Gaussian component.
+    lam_1: float
+        Fraction of black holes in the lower mass Gaussian component.
+    mpp_1: float
+        Mean of the lower mass Gaussian component.
+    mpp_2: float
+        Mean of the upper mass Gaussian component.
+    sigpp_1: float
+        Standard deviation of the lower mass Gaussian component.
+    sigpp_2: float
+        Standard deviation of the upper mass Gaussian component.
+    delta_m: float
+        Rise length of the low end of the mass distribution.
 
+<<<<<<< HEAD
     @property
     def kwargs(self):
         return dict(gaussian_mass_maximum=self.mmax)
+=======
+    Notes
+    -----
+    The Gaussian components are bounded between [`mmin`, `self.mmax`].
+    This means that the `mmax` parameter is _not_ the global maximum.
+    """
+
+    _primary_model = three_component_single
+>>>>>>> spline-mass-models
 
 
 class BrokenPowerLawSmoothedMassDistribution(BaseSmoothedMassDistribution):
     """
     Broken power law for two-dimensional mass distribution with low
     mass smoothing.
+<<<<<<< HEAD
 
     Parameters
     ----------
@@ -774,11 +884,44 @@ class BrokenPowerLawSmoothedMassDistribution(BaseSmoothedMassDistribution):
     delta_m: float
         Rise length of the low end of the mass distribution.
     """
+=======
+>>>>>>> spline-mass-models
 
-    primary_model = double_power_law_primary_mass
+    Parameters
+    ----------
+    dataset: dict
+        Dictionary of numpy arrays for 'mass_1' and 'mass_ratio'.
+    alpha_1: float
+        Powerlaw exponent for more massive black hole below break.
+    alpha_2: float
+        Powerlaw exponent for more massive black hole above break.
+    beta: float
+        Power law exponent of the mass ratio distribution.
+    break_fraction: float
+        Fraction between mmin and mmax primary mass distribution breaks at.
+    mmin: float
+        Minimum black hole mass.
+    mmax: float
+        Maximum mass in the powerlaw distributed component.
+    lam: float
+        Fraction of black holes in the Gaussian component.
+    mpp: float
+        Mean of the Gaussian component.
+    sigpp: float
+        Standard deviation of the Gaussian component.
+    delta_m: float
+        Rise length of the low end of the mass distribution.
+    """
 
+<<<<<<< HEAD
 
 class BrokenPowerLawPeakSmoothedMassDistribution(BaseSmoothedMassDistribution):
+=======
+    _primary_model = double_power_law_primary_mass
+
+
+class BrokenPowerLawPeakSmoothedMassDistribution(SinglePeakSmoothedMassDistribution):
+>>>>>>> spline-mass-models
     """
     Broken power law for two-dimensional mass distribution with low
     mass smoothing.
@@ -814,8 +957,174 @@ class BrokenPowerLawPeakSmoothedMassDistribution(BaseSmoothedMassDistribution):
     This means that the `mmax` parameter is _not_ the global maximum.
     """
 
+<<<<<<< HEAD
     primary_model = double_power_law_peak_primary_mass
 
     @property
     def kwargs(self):
         return dict(gaussian_mass_maximum=self.mmax)
+=======
+    _primary_model = double_power_law_peak_primary_mass
+
+
+class BaseInterpolatedPowerlaw(BaseSmoothedMassDistribution):
+    """
+    Base class for the Interpolated Powerlaw classes (vary the number of nodes)
+    """
+
+    def __init__(self, nodes=10, kind="cubic", mmin=2, mmax=100):
+        """ """
+        super(BaseInterpolatedPowerlaw, self).__init__(mmin=mmin, mmax=mmax)
+        self.nodes = nodes
+        self.norm_selector = None
+        self.spline_selector = None
+        self._norm_spline = None
+        self._data_spline = None
+        self.kind = kind
+
+    @property
+    def variable_names(self):
+        keys = [f"m{ii}" for ii in range(self.nodes)]
+        keys += [f"f{ii}" for ii in range(self.nodes)]
+        keys += ["alpha", "beta", "mmin", "mmax"]
+        return keys
+
+    def primary_model(self, mass, alpha, mmin, mmax):
+        return powerlaw(mass, alpha=-alpha, low=mmin, high=mmax)
+
+    def setup_interpolant(self, nodes, values):
+        from cached_interpolate import CachingInterpolant
+
+        kwargs = dict(x=nodes, y=values, kind=self.kind, backend=xp)
+        self._norm_spline = CachingInterpolant(**kwargs)
+        self._data_spline = CachingInterpolant(**kwargs)
+
+    def p_m1(self, dataset, **kwargs):
+        f_splines = np.array([kwargs.pop(f"f{i}") for i in range(self.nodes)])
+        m_splines = np.array([kwargs.pop(f"m{i}") for i in range(self.nodes)])
+
+        if self.spline_selector is None:
+            if self._norm_spline is None:
+                self.setup_interpolant(m_splines, f_splines)
+            self.spline_selector = (dataset["mass_1"] >= m_splines[0]) & (
+                dataset["mass_1"] <= m_splines[-1]
+            )
+
+        mmin = kwargs.get("mmin", self.mmin)
+        delta_m = kwargs.pop("delta_m", 0)
+
+        p_m = self.primary_model(dataset["mass_1"], **kwargs)
+        p_m *= self.smoothing(
+            dataset["mass_1"], mmin=mmin, mmax=self.mmax, delta_m=delta_m
+        )
+
+        perturbation = self._data_spline(
+            x=dataset["mass_1"][self.spline_selector], y=f_splines
+        )
+        p_m[self.spline_selector] *= xp.exp(perturbation)
+
+        norm = self.norm_p_m1(
+            delta_m=delta_m, m_splines=m_splines, f_splines=f_splines, **kwargs
+        )
+        return p_m / norm
+
+    def norm_p_m1(self, delta_m, f_splines=None, m_splines=None, **kwargs):
+        if self.norm_selector is None:
+            self.norm_selector = (self.m1s >= m_splines[0]) & (
+                self.m1s <= m_splines[-1]
+            )
+        mmin = kwargs.get("mmin", self.mmin)
+        p_m = self.primary_model(self.m1s, **kwargs)
+        p_m *= self.smoothing(self.m1s, mmin=mmin, mmax=self.mmax, delta_m=delta_m)
+        perturbation = self._norm_spline(x=self.m1s[self.norm_selector], y=f_splines)
+        p_m[self.norm_selector] *= xp.exp(perturbation)
+        norm = trapz(p_m, self.m1s)
+        return norm
+
+
+class Vamana:
+    def __init__(self, n_components, base_model=None, reference_parameters=None):
+        self.n_components = n_components
+        self.base_model = base_model
+        self.reference_parameters = reference_parameters
+        self.chirp_masses = xp.linspace(2, 100, 1000)
+
+    @property
+    def variable_names(self):
+        names = [f"weight_{ii}" for ii in range(self.n_components - 1)]
+        names += [f"mu_m_{ii}" for ii in range(self.n_components)]
+        names += [f"sigma_m_{ii}" for ii in range(self.n_components)]
+        names += [f"mu_sz_{ii}" for ii in range(self.n_components)]
+        names += [f"sigma_sz_{ii}" for ii in range(self.n_components)]
+        names += [f"alpha_q_{ii}" for ii in range(self.n_components)]
+        names += [f"qmin_{ii}" for ii in range(self.n_components)]
+        return names
+
+    def reference_model(self, mass):
+        if self.base_model is None:
+            return xp.ones(mass.shape)
+        elif self.reference_parameters is None:
+            raise ValueError("No reference parameters provided for base_model")
+        return self.base_model(mass, **self.reference_parameters)
+
+    def __call__(self, dataset, **kwargs):
+        prob = xp.zeros(dataset["chirp_mass"].shape)
+        final_weight = 1 - sum(
+            [kwargs[f"weight_{ii}"] for ii in range(self.n_components - 1)]
+        )
+        if final_weight < 0:
+            return prob
+        else:
+            kwargs[f"weight_{self.n_components - 1}"] = final_weight
+        self.base_prob = self.reference_model(dataset["chirp_mass"])
+        self.norm_base_prob = self.reference_model(self.chirp_masses)
+        for ii in range(self.n_components):
+            prob += (
+                kwargs[f"weight_{ii}"]
+                * self.p_mc(dataset["chirp_mass"], kwargs, ii)
+                * self.p_chi(dataset["chi_1"], kwargs, ii)
+                * self.p_chi(dataset["chi_2"], kwargs, ii)
+                * self.p_mass_ratio(dataset["mass_ratio"], kwargs, ii)
+            )
+        return prob
+
+    def p_mc(self, mass, kwargs, ii, base=None, base_norm=None):
+        prob = truncnorm(
+            mass,
+            mu=kwargs[f"mu_m_{ii}"],
+            sigma=kwargs[f"sigma_m_{ii}"] * kwargs[f"mu_m_{ii}"],
+            high=100,
+            low=2,
+        )
+        if self.base_model is not None:
+            norm_prob = trapz(
+                self.norm_base_prob
+                * truncnorm(
+                    self.chirp_mass,
+                    mu=kwargs[f"mu_m_{ii}"],
+                    sigma=kwargs[f"sigma_m_{ii}"] * kwargs[f"mu_m_{ii}"],
+                    high=100,
+                    low=2,
+                ),
+                self.chirp_mass,
+            )
+            prob *= self.base_prob / norm_prob
+        return prob
+
+    def p_chi(self, spin, kwargs, ii):
+        return truncnorm(
+            spin,
+            mu=kwargs[f"mu_sz_{ii}"],
+            sigma=kwargs[f"sigma_sz_{ii}"],
+            high=1,
+            low=-1,
+        )
+
+    def p_mass_ratio(self, mass_ratio, kwargs, ii):
+        return powerlaw(
+            mass_ratio,
+            alpha=kwargs[f"alpha_q_{ii}"],
+            high=1,
+            low=kwargs[f"qmin_{ii}"],
+        )
+>>>>>>> spline-mass-models

@@ -5,7 +5,23 @@ Helper functions for probability distributions.
 import numpy as np
 from scipy import special as scs
 
+<<<<<<< HEAD
 xp = np
+=======
+from bilby.hyper.model import Model as _Model
+
+from .cupy_utils import betaln, erf, xp
+>>>>>>> spline-mass-models
+
+
+class Model(_Model):
+    def _get_function_parameters(self, func):
+        """If the function is a class method we need to remove more arguments"""
+        if hasattr(func, "variable_names"):
+            parameters = {key: self.parameters[key] for key in func.variable_names}
+            return parameters
+        else:
+            return super(Model, self)._get_function_parameters(func)
 
 
 def beta_dist(xx, alpha, beta, scale=1):
