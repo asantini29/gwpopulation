@@ -2,7 +2,10 @@
 Implemented spin models
 """
 
-import numpy as xp
+#import numpy as xp
+from jax import numpy as jnp
+
+xp = jnp
 
 from ..utils import beta_dist, truncnorm, unnormalized_2d_gaussian
 from .interped import InterpolatedNoBaseModelIdentical

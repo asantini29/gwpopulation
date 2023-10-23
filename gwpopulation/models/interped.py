@@ -1,6 +1,7 @@
 import numpy as np
+from jax import numpy as jnp
 
-xp = np
+xp = jnp
 
 
 class InterpolatedNoBaseModelIdentical(object):

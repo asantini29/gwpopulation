@@ -5,13 +5,15 @@ Likelihoods for population inference
 import types
 
 import numpy as np
+from jax import numpy as jnp
 from bilby.core.likelihood import Likelihood
 from bilby.core.utils import logger
 from bilby.hyper.model import Model
 
 from .utils import get_name, to_numpy
 
-xp = np
+#xp = np
+xp = jnp
 
 
 class HyperparameterLikelihood(Likelihood):

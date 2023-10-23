@@ -3,10 +3,11 @@ Implemented redshift models
 """
 
 import numpy as np
+from jax import numpy as jnp
 
 from ..utils import to_numpy
 
-xp = np
+xp = jnp
 
 
 class _Redshift(object):

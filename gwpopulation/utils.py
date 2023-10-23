@@ -3,10 +3,11 @@ Helper functions for probability distributions.
 """
 
 import numpy as np
+from jax import numpy as jnp
 from scipy import special as scs
 
-xp = np
-
+#xp = np
+xp = jnp
 
 def beta_dist(xx, alpha, beta, scale=1):
     r"""
