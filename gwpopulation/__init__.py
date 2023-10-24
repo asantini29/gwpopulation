@@ -78,4 +78,4 @@ def set_backend(backend="numpy"):
     models.mass.scs = scs
 
 
-set_backend("numpy")
+set_backend("jax.numpy")
